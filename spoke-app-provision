@@ -1,0 +1,123 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+
+main() {
+  local target="${1:-system0}"
+  "_run_${target}"
+}
+
+_run_system0() {
+  set -o xtrace
+
+  sudo swapon --show | if ! grep -q /swap; then
+    sudo fallocate -l 8G /swap
+    sudo chmod 600 /swap
+    sudo mkswap -L swap /swap
+    sudo swapon /swap
+  fi
+
+  if ! grep -q ^LABEL=swap /etc/fstab &>/dev/null; then
+    echo 'LABEL=swap none swap sw 0 0' | sudo tee -a /etc/fstab
+  fi
+
+  sudo sysctl vm.swappiness=10
+  echo 'vm.swappiness=10' | sudo tee /etc/sysctl.d/99-swappiness.conf
+
+  sudo sysctl vm.vfs_cache_pressure=50
+  echo 'vm.vfs_cache_pressure=50' |
+    sudo tee /etc/sysctl.d/99-cache-pressure.conf
+
+  sudo apt-get update -y
+  sudo apt-get install -y \
+    build-essential \
+    ca-certificates \
+    curl \
+    git \
+    gnupg \
+    redis
+
+  sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" >/etc/apt/sources.list.d/pgdg.list'
+  curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+  sudo apt-get update -y
+  sudo apt-get install -y postgresql-client-11
+
+  curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+  echo "deb https://dl.yarnpkg.com/debian/ stable main" |
+    sudo tee /etc/apt/sources.list.d/yarn.list
+  sudo apt-get update -y
+  sudo apt-get install -y --no-install-recommends yarn
+
+  if ! getent passwd spoke; then
+    sudo useradd --create-home --comment 'Spoke app' spoke
+  fi
+
+  sudo chsh -s /bin/bash spoke
+  sudo chown -R spoke:spoke /home/spoke
+}
+
+_run_system1() {
+  set -o xtrace
+  sudo cp -v /tmp/spoke.service /etc/systemd/system/spoke.service
+
+  sudo systemctl enable spoke
+  sudo systemctl stop spoke || true
+  sudo systemctl start spoke || true
+}
+
+_run_spoke0() {
+  set -o xtrace
+
+  git --version
+  if [[ ! -d /home/spoke/app/.git ]]; then
+    git clone https://github.com/MoveOnOrg/Spoke.git /home/spoke/app
+  fi
+  cd /home/spoke/app
+  git checkout -qf 'v5.1'
+
+  cp -v /tmp/spoke-app-run /home/spoke/spoke-app-run
+  chmod +x /home/spoke/spoke-app-run
+
+  if ! command -v nvm; then
+    curl -fsSL \
+      https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash
+    set +o errexit
+    set +o xtrace
+    source ~/.nvm/nvm.sh
+    set -o xtrace
+    set -o errexit
+  fi
+  nvm --version 2>/dev/null
+  nvm install 2>/dev/null
+  nvm use 2>/dev/null
+
+  if [[ -f /tmp/app.env ]]; then
+    cp -v /tmp/app.env /home/spoke/app/.env
+  fi
+  sha1sum /home/spoke/app/.env
+
+  set -o allexport
+  source /home/spoke/app/.env
+  set +o allexport
+
+  yarn --version
+  yarn install --ignore-scripts --non-interactive --frozen-lockfile
+
+  local git_head
+  git_head="$(cat .git/HEAD || true)"
+  local yarn_prod_build_ref
+  yarn_prod_build_ref="$(
+    cat /home/spoke/yarn_prod_build_ref 2>/dev/null || true
+  )"
+  if [[ "${git_head}" == "${yarn_prod_build_ref}" ]]; then
+    echo "skipping yarn run prod-build"
+    return
+  fi
+
+  yarn run prod-build
+  rm -rf ./node_modules
+  yarn install --production --ignore-scripts
+  echo "${git_ref}" >/home/spoke/yarn_prod_build_ref
+}
+
+main "${@}"

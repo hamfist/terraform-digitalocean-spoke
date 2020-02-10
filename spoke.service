@@ -1,0 +1,14 @@
+# vim:filetype=systemd
+[Unit]
+Description=Spoke
+
+[Service]
+Type=simple
+User=spoke
+Group=spoke
+EnvironmentFile=-/home/spoke/app/.env
+ExecStart=/home/spoke/spoke-app-run
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
