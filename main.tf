@@ -1,3 +1,7 @@
+variable "server_name" {
+  description = "Server name used in nginx config"
+}
+
 variable "base_url" {
   description = "Fully qualified https URL of the app"
 }
@@ -33,7 +37,7 @@ variable "region" {
 }
 
 variable "ssh_keys" {
-  type        = "list"
+  type        = list
   description = "List of ssh public keys to pass to droplet provisioning"
 }
 
@@ -46,7 +50,7 @@ variable "cert_certificate" {
 }
 
 variable "env" {
-  type        = "map"
+  type        = map
   description = "Arbitrary *additional* environment variables passed at build time and run time"
   default     = {}
 }
@@ -153,12 +157,12 @@ resource "null_resource" "app_provision" {
   }
 
   provisioner "file" {
-    source      = var.cert_pem_file
+    content     = var.cert_certificate
     destination = "/tmp/spoke.crt"
   }
 
   provisioner "file" {
-    source      = var.key_pem_file
+    content     = var.cert_private_key
     destination = "/tmp/spoke.key"
   }
 
