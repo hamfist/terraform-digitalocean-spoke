@@ -230,3 +230,7 @@ output "droplet_ipv4_address" {
 output "floating_ip_address" {
   value = digitalocean_floating_ip.app.ip_address
 }
+
+output "floating_ip_urn" {
+  value = digitalocean_floating_ip.app.urn
+}
