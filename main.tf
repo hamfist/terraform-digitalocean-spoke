@@ -197,8 +197,8 @@ resource "null_resource" "app_provision" {
 
   provisioner "file" {
     content = <<-ENV_TMPL
-      %{for var in local.env_map~}
-      ${var.0}='${var.1}'
+      %{for key, value in local.env_map~}
+      ${key}='${value}'
       %{endfor~}
     ENV_TMPL
 
