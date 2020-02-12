@@ -150,9 +150,9 @@ locals {
 resource "null_resource" "app_provision" {
   triggers = {
     droplet_id            = digitalocean_droplet.app.id
-    provision_script_sha1 = filesha1("spoke-app-provision")
-    run_script_sha1       = filesha1("spoke-app-run")
-    service_sha1          = filesha1("spoke.service")
+    provision_script_sha1 = filesha1("${path.module}/spoke-app-provision")
+    run_script_sha1       = filesha1("${path.module}/spoke-app-run")
+    service_sha1          = filesha1("${path.module}/spoke.service")
     env_sha1 = sha1(join(";", [
       jsonencode(var.env),
       random_string.session_secret.result,
@@ -168,17 +168,17 @@ resource "null_resource" "app_provision" {
   }
 
   provisioner "file" {
-    source      = "spoke-app-provision"
+    source      = "${path.module}/spoke-app-provision"
     destination = "/tmp/spoke-app-provision"
   }
 
   provisioner "file" {
-    source      = "spoke-app-run"
+    source      = "${path.module}/spoke-app-run"
     destination = "/tmp/spoke-app-run"
   }
 
   provisioner "file" {
-    content = templatefile("nginx-sites-default.conf.tpl", {
+    content = templatefile("${path.module}/nginx-sites-default.conf.tpl", {
       server_name = var.server_name,
       port        = var.port,
     })
@@ -206,7 +206,7 @@ resource "null_resource" "app_provision" {
   }
 
   provisioner "file" {
-    source      = "spoke.service"
+    source      = "${path.module}/spoke.service"
     destination = "/tmp/spoke.service"
   }
 
