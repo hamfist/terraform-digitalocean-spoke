@@ -73,7 +73,7 @@ resource "digitalocean_droplet" "app" {
   region = var.region
   size   = var.droplet_size
 
-  ssh_keys = [digitalocean_ssh_key.app[*].id]
+  ssh_keys = digitalocean_ssh_key.app[*].id
 }
 
 resource "digitalocean_floating_ip" "app" {
