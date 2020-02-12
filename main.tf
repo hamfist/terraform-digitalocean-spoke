@@ -118,6 +118,29 @@ resource "random_string" "pg_password" {
   length = 31
 }
 
+locals {
+  env_map = merge({
+    ASSETS_MAP_FILE   = "assets.json",
+    ASSETS_DIR        = "./build/client/assets",
+    BASE_URL          = var.base_url,
+    DATABASE_URL      = "postgres://spoke:${random_string.pg_password.result}@127.0.0.1:5432/spoke",
+    DB_HOST           = "localhost",
+    DB_NAME           = "spoke",
+    DB_PASSWORD       = random_string.pg_password.result,
+    DB_PORT           = "5432",
+    DB_TYPE           = "pg",
+    DB_USER           = "spoke",
+    DB_USE_SSL        = "true",
+    JOBS_SAME_PROCESS = "1",
+    NODE_ENV          = var.node_env,
+    NODE_OPTIONS      = var.node_options,
+    OUTPUT_DIR        = "./build",
+    PORT              = var.port,
+    REDIS_URL         = "redis://127.0.0.1:6379/0",
+    SESSION_SECRET    = random_string.session_secret.result,
+  }, var.env)
+}
+
 resource "null_resource" "app_provision" {
   triggers = {
     droplet_id            = digitalocean_droplet.app.id
@@ -167,28 +190,12 @@ resource "null_resource" "app_provision" {
   }
 
   provisioner "file" {
-    content = templatefile("app.env.tpl", {
-      env = merge({
-        ASSETS_MAP_FILE   = "assets.json",
-        ASSETS_DIR        = "./build/client/assets",
-        BASE_URL          = var.base_url,
-        DATABASE_URL      = "postgres://spoke:${random_string.pg_password.result}@127.0.0.1:5432/spoke",
-        DB_HOST           = "localhost",
-        DB_NAME           = "spoke",
-        DB_PASSWORD       = random_string.pg_password.result,
-        DB_PORT           = "5432",
-        DB_TYPE           = "pg",
-        DB_USER           = "spoke",
-        DB_USE_SSL        = "true",
-        JOBS_SAME_PROCESS = "1",
-        NODE_ENV          = var.node_env,
-        NODE_OPTIONS      = var.node_options,
-        OUTPUT_DIR        = "./build",
-        PORT              = var.port,
-        REDIS_URL         = "redis://127.0.0.1:6379/0",
-        SESSION_SECRET    = random_string.session_secret.result,
-      }, var.env)
-    })
+    content = <<-ENV_TMPL
+      %{for var in local.env_map~}
+      ${var.0}='${var.1}'
+      %{endfor~}
+    ENV_TMPL
+
     destination = "/tmp/app.env"
   }
 
