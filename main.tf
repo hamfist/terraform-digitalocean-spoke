@@ -1,6 +1,6 @@
 terraform {
   required_providers {
-    digitalocean = "~ 1.14"
+    digitalocean = ">= 1.14"
   }
 }
 
