@@ -1,3 +1,9 @@
+terraform {
+  required_providers {
+    digitalocean = "~ 1.14"
+  }
+}
+
 variable "server_name" {
   description = "Server name used in nginx config"
 }
