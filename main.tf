@@ -1,16 +1,60 @@
+variable "base_url" {
+  description = "Fully qualified https URL of the app"
+}
+
+variable "resource_prefix" {
+  description = "Prefix prepended to resource names"
+  default     = "spoke-"
+}
+
+variable "node_options" {
+  description = "Value defined at build time and run time as NODE_OPTIONS"
+  default     = "--max_old_space_size=8192"
+}
+
+variable "node_env" {
+  description = "Value defined at build time and run time as NODE_ENV"
+  default     = "production"
+}
+
+variable "port" {
+  description = "TCP port used to communicate between droplet and nginx"
+  default     = "3000"
+}
+
+variable "droplet_size" {
+  description = "Size value passed when provisioning app droplet"
+  default     = "s-1vcpu-1gb"
+}
+
+variable "region" {
+  description = "Region in which all resources will be provisioned"
+  default     = "nyc1"
+}
+
+variable "ssh_keys" {
+  type        = "list"
+  description = "List of ssh public keys to pass to droplet provisioning"
+}
+
+variable "cert_private_key" {
+  description = "Certificate key to pass to nginx"
+}
+
+variable "cert_certificate" {
+  description = "Certificate with leaf and intermediates to pass to nginx"
+}
+
+variable "env" {
+  type        = "map"
+  description = "Arbitrary *additional* environment variables passed at build time and run time"
+  default     = {}
+}
+
 resource "digitalocean_ssh_key" "app" {
   count      = length(var.ssh_keys)
   name       = "${var.resource_prefix}app-${count.index}"
   public_key = element(var.ssh_keys, count.index)
-}
-
-resource "digitalocean_database_cluster" "pg" {
-  name       = "${var.resource_prefix}pg"
-  engine     = "pg"
-  version    = "11"
-  size       = var.database_cluster_size
-  region     = var.region
-  node_count = 1
 }
 
 resource "digitalocean_droplet" "app" {
@@ -19,66 +63,26 @@ resource "digitalocean_droplet" "app" {
   region = var.region
   size   = var.droplet_size
 
-  ssh_keys = [digitalocean_ssh_key.app.*.id]
+  ssh_keys = [digitalocean_ssh_key.app[*].id]
 }
 
-resource "digitalocean_certificate" "app" {
-  name             = "${var.resource_prefix}app"
-  private_key      = var.cert_private_key
-  leaf_certificate = var.cert_leaf_certificate
-
-  lifecycle {
-    create_before_destroy = true
-  }
-}
-
-resource "digitalocean_loadbalancer" "app" {
-  name                   = "${var.resource_prefix}lb-app"
-  region                 = var.region
-  droplet_ids            = [digitalocean_droplet.app.id]
-  redirect_http_to_https = true
-
-  forwarding_rule {
-    entry_port     = 80
-    entry_protocol = "http"
-
-    target_port     = var.port
-    target_protocol = "http"
-  }
-
-  forwarding_rule {
-    entry_port     = 443
-    entry_protocol = "https"
-
-    target_port     = var.port
-    target_protocol = "http"
-
-    certificate_id = digitalocean_certificate.app.id
-  }
-
-  healthcheck {
-    port     = var.port
-    protocol = "tcp"
-  }
+resource "digitalocean_floating_ip" "app" {
+  droplet_id = digitalocean_droplet.app.id
+  region     = digitalocean_droplet.app.region
 }
 
 resource "digitalocean_firewall" "app" {
-  name = "${var.resource_prefix}app"
+  name = "pghdsa-spoke-app"
 
   droplet_ids = [digitalocean_droplet.app.id]
 
-  inbound_rule {
-    protocol         = "tcp"
-    port_range       = "22"
-    source_addresses = ["0.0.0.0/0", "::/0"]
-  }
-
-  inbound_rule {
-    protocol   = "tcp"
-    port_range = "1-65535"
-    # FIXME: what
-    #port_range                = var.port
-    source_load_balancer_uids = [digitalocean_loadbalancer.app.id]
+  dynamic "inbound_rule" {
+    for_each = ["22", "80", "443"]
+    content {
+      protocol         = "tcp"
+      port_range       = inbound_rule.value
+      source_addresses = ["0.0.0.0/0", "::/0"]
+    }
   }
 
   inbound_rule {
@@ -86,16 +90,13 @@ resource "digitalocean_firewall" "app" {
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
-  outbound_rule {
-    protocol              = "tcp"
-    port_range            = "1-65535"
-    destination_addresses = ["0.0.0.0/0", "::/0"]
-  }
-
-  outbound_rule {
-    protocol              = "udp"
-    port_range            = "1-65535"
-    destination_addresses = ["0.0.0.0/0", "::/0"]
+  dynamic "outbound_rule" {
+    for_each = ["tcp", "udp"]
+    content {
+      protocol              = outbound_rule.value
+      port_range            = "1-65535"
+      destination_addresses = ["0.0.0.0/0", "::/0"]
+    }
   }
 
   outbound_rule {
@@ -109,10 +110,13 @@ resource "random_string" "session_secret" {
   special = false
 }
 
+resource "random_string" "pg_password" {
+  length = 31
+}
+
 resource "null_resource" "app_provision" {
   triggers = {
     droplet_id            = digitalocean_droplet.app.id
-    database_cluster_id   = digitalocean_database_cluster.pg.id
     provision_script_sha1 = filesha1("spoke-app-provision")
     run_script_sha1       = filesha1("spoke-app-run")
     service_sha1          = filesha1("spoke.service")
@@ -141,26 +145,46 @@ resource "null_resource" "app_provision" {
   }
 
   provisioner "file" {
-    content = templatefile("app.env.tpl", merge({
-      ASSETS_MAP_FILE   = "assets.json",
-      ASSETS_DIR        = "./build/client/assets",
-      BASE_URL          = var.base_url,
-      DATABASE_URL      = digitalocean_database_cluster.pg.uri,
-      DB_HOST           = digitalocean_database_cluster.pg.host,
-      DB_NAME           = digitalocean_database_cluster.pg.database,
-      DB_PASSWORD       = digitalocean_database_cluster.pg.password,
-      DB_PORT           = digitalocean_database_cluster.pg.port,
-      DB_TYPE           = "pg",
-      DB_USER           = digitalocean_database_cluster.pg.user,
-      DB_USE_SSL        = "true",
-      JOBS_SAME_PROCESS = "1",
-      NODE_ENV          = var.node_env,
-      NODE_OPTIONS      = var.node_options,
-      OUTPUT_DIR        = "./build",
-      PORT              = var.port,
-      REDIS_URL         = "redis://127.0.0.1:6379/0",
-      SESSION_SECRET    = random_string.session_secret.result,
-    }, var.env))
+    content = templatefile("nginx-sites-default.conf.tpl", {
+      server_name = var.server_name,
+      port        = var.port,
+    })
+    destination = "/tmp/nginx-sites-default.conf"
+  }
+
+  provisioner "file" {
+    source      = var.cert_pem_file
+    destination = "/tmp/spoke.crt"
+  }
+
+  provisioner "file" {
+    source      = var.key_pem_file
+    destination = "/tmp/spoke.key"
+  }
+
+  provisioner "file" {
+    content = templatefile("app.env.tpl", {
+      env = merge({
+        ASSETS_MAP_FILE   = "assets.json",
+        ASSETS_DIR        = "./build/client/assets",
+        BASE_URL          = var.base_url,
+        DATABASE_URL      = "postgres://spoke:${random_string.pg_password.result}@127.0.0.1:5432/spoke",
+        DB_HOST           = "localhost",
+        DB_NAME           = "spoke",
+        DB_PASSWORD       = random_string.pg_password.result,
+        DB_PORT           = "5432",
+        DB_TYPE           = "pg",
+        DB_USER           = "spoke",
+        DB_USE_SSL        = "true",
+        JOBS_SAME_PROCESS = "1",
+        NODE_ENV          = var.node_env,
+        NODE_OPTIONS      = var.node_options,
+        OUTPUT_DIR        = "./build",
+        PORT              = var.port,
+        REDIS_URL         = "redis://127.0.0.1:6379/0",
+        SESSION_SECRET    = random_string.session_secret.result,
+      }, var.env)
+    })
     destination = "/tmp/app.env"
   }
 
@@ -178,11 +202,14 @@ resource "null_resource" "app_provision" {
   }
 }
 
-resource "digitalocean_database_firewall" "app_pg" {
-  cluster_id = digitalocean_database_cluster.pg.id
+output "droplet_urn" {
+  value = digitalocean_droplet.app.urn
+}
 
-  rule {
-    type  = "droplet"
-    value = digitalocean_droplet.app.id
-  }
+output "droplet_ipv4_address" {
+  value = digitalocean_droplet.app.ipv4_address
+}
+
+output "floating_ip_address" {
+  value = digitalocean_floating_ip.app.ip_address
 }

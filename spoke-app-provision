@@ -9,6 +9,7 @@ main() {
 
 _run_system0() {
   set -o xtrace
+  cd /tmp
 
   sudo swapon --show | if ! grep -q /swap; then
     sudo fallocate -l 8G /swap
@@ -35,18 +36,44 @@ _run_system0() {
     curl \
     git \
     gnupg \
+    nginx-full \
     redis
 
-  sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" >/etc/apt/sources.list.d/pgdg.list'
-  curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-  sudo apt-get update -y
-  sudo apt-get install -y postgresql-client-11
+  dpkg --get-selections || true |
+    if ! grep -qE '^postgresql-client-11.+install$'; then
+      echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" |
+        sudo tee /etc/apt/sources.list.d/pgdg.list &>/dev/null
+      curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+      sudo apt-get update -y
+      sudo apt-get install -y postgresql-11 postgresql-client-11
+    fi
 
-  curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
-  echo "deb https://dl.yarnpkg.com/debian/ stable main" |
-    sudo tee /etc/apt/sources.list.d/yarn.list
-  sudo apt-get update -y
-  sudo apt-get install -y --no-install-recommends yarn
+  pg_ctlcluster 11 main start
+  sudo -H -u postgres bash <<PGSETUP
+    set -o allexport
+    source /tmp/app.env
+    createuser spoke || true
+    createdb --owner=spoke spoke || true
+    psql -c "GRANT ALL ON DATABASE spoke TO spoke"
+    set +o xtrace
+    psql -c "ALTER USER spoke WITH PASSWORD '\${DB_PASSWORD}';"
+PGSETUP
+
+  mv -v /tmp/spoke.crt /etc/nginx/spoke.crt
+  mv -v /tmp/spoke.key /etc/nginx/spoke.key
+  chmod 0600 /etc/nginx/spoke.crt /etc/nginx/spoke.key
+  cp -v /tmp/nginx-sites-default.conf /etc/nginx/sites-available/default
+  ln -svf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+  sha1sum /etc/nginx/sites-available/default
+  systemctl restart nginx
+
+  if ! command -v yarn; then
+    curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
+    echo "deb https://dl.yarnpkg.com/debian/ stable main" |
+      sudo tee /etc/apt/sources.list.d/yarn.list
+    sudo apt-get update -y
+    sudo apt-get install -y --no-install-recommends yarn
+  fi
 
   if ! getent passwd spoke; then
     sudo useradd --create-home --comment 'Spoke app' spoke
@@ -91,9 +118,7 @@ _run_spoke0() {
   nvm install 2>/dev/null
   nvm use 2>/dev/null
 
-  if [[ -f /tmp/app.env ]]; then
-    cp -v /tmp/app.env /home/spoke/app/.env
-  fi
+  cp -v /tmp/app.env /home/spoke/app/.env
   sha1sum /home/spoke/app/.env
 
   set -o allexport
@@ -117,7 +142,7 @@ _run_spoke0() {
   yarn run prod-build
   rm -rf ./node_modules
   yarn install --production --ignore-scripts
-  echo "${git_ref}" >/home/spoke/yarn_prod_build_ref
+  echo "${git_head}" >/home/spoke/yarn_prod_build_ref
 }
 
 main "${@}"
