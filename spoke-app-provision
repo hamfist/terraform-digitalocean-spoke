@@ -59,14 +59,6 @@ _run_system0() {
     psql -c "ALTER USER spoke WITH PASSWORD '\${DB_PASSWORD}';"
 PGSETUP
 
-  mv -v /tmp/spoke.crt /etc/nginx/spoke.crt
-  mv -v /tmp/spoke.key /etc/nginx/spoke.key
-  chmod 0600 /etc/nginx/spoke.crt /etc/nginx/spoke.key
-  cp -v /tmp/nginx-sites-default.conf /etc/nginx/sites-available/default
-  ln -svf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
-  sha1sum /etc/nginx/sites-available/default
-  systemctl restart nginx
-
   if ! command -v yarn; then
     curl -fsSL https://dl.yarnpkg.com/debian/pubkey.gpg | sudo apt-key add -
     echo "deb https://dl.yarnpkg.com/debian/ stable main" |
@@ -81,6 +73,15 @@ PGSETUP
 
   sudo chsh -s /bin/bash spoke
   sudo chown -R spoke:spoke /home/spoke
+
+  mv -v /tmp/spoke.crt /home/spoke/spoke.crt
+  mv -v /tmp/spoke.key /home/spoke/spoke.key
+  chmod 0600 /home/spoke/spoke.crt /home/spoke/spoke.key
+  chown spoke /home/spoke/spoke.crt /home/spoke/spoke.key
+  cp -v /tmp/nginx-sites-default.conf /etc/nginx/sites-available/default
+  ln -svf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+  sha1sum /etc/nginx/sites-available/default
+  systemctl restart nginx
 }
 
 _run_system1() {

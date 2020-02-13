@@ -5,8 +5,8 @@ server {
   listen 443 ssl;
   listen [::]:443 ssl;
   server_name ${server_name};
-  ssl_certificate spoke.crt;
-  ssl_certificate_key spoke.key;
+  ssl_certificate /home/spoke/spoke.crt;
+  ssl_certificate_key /home/spoke/spoke.key;
   ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
   ssl_ciphers HIGH:!aNULL:!MD5;
   access_log /var/log/nginx/spoke.access.log combined;
