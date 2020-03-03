@@ -4,4 +4,6 @@ SHELL := /bin/bash
 docs: README.md
 
 README.md: $(wildcard *.tf)
-	terraform-docs markdown table . | tee $@ &>/dev/null
+	terraform-docs markdown table . | \
+		sed 's/  *$$//g' | \
+		tee $@ &>/dev/null

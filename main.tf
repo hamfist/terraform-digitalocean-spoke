@@ -12,8 +12,8 @@
  * ## Usage
  *
  * A typical production deployment that uses `PASSPORT_STRATEGY=auth0`,
- * `DEFAULT_SERVICE=twilio`, and a direct SMTP connection for email might look like
- * this:
+ * `DEFAULT_SERVICE=twilio`, and a direct SMTP connection for email might look
+ * like this:
  *
  * ```hcl
  * module "digitalocean_spoke" {
