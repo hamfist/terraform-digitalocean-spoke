@@ -1,3 +1,55 @@
+/**
+ * # `tf_digitalocean_spoke`
+ * <!-- WARNING: this file is generated -->
+ *
+ * This is a terraform module that provisions a
+ * [Spoke](https://github.com/MoveOnOrg/Spoke) instance at DigitalOcean.
+ *
+ * ## Terraform versions
+ *
+ * This module is compatible with Terraform version `0.12+`.
+ *
+ * ## Usage
+ *
+ * A typical production deployment that uses `PASSPORT_STRATEGY=auth0`,
+ * `DEFAULT_SERVICE=twilio`, and a direct SMTP connection for email might look like
+ * this:
+ *
+ * ```hcl
+ * module "digitalocean_spoke" {
+ *   source = "github.com/meatballhat/tf_digitalocean_spoke"
+ *
+ *   server_name      = "spoke.example.org"
+ *   base_url         = "https://spoke.example.org"
+ *   resource_prefix  = "example-spoke-"
+ *   region           = "nyc1"
+ *   ssh_keys         = [file("path/to/id_rsa.pub")]
+ *   cert_private_key = file("path/to/cert.key")
+ *   cert_certificate = file("path/to/cert.crt")
+ *   env = {
+ *     AUTH0_CLIENT_ID            = "8570285697946a0cc03f8049b9309d7e"
+ *     AUTH0_CLIENT_SECRET        = "1194435d32479ef99ed51a0a5f244cd5"
+ *     AUTH0_DOMAIN               = "example.auth0.com"
+ *     EMAIL_FROM                 = "admin@example.org"
+ *     EMAIL_HOST                 = "mail.example.org"
+ *     EMAIL_HOST_PASSWORD        = "b5090d80c82e608a1acd2f59ac366083"
+ *     EMAIL_HOST_PORT            = "123"
+ *     EMAIL_HOST_SECURE          = "true"
+ *     EMAIL_HOST_USER            = "admin"
+ *     DEFAULT_SERVICE            = "twilio",
+ *     PASSPORT_STRATEGY          = "auth0",
+ *     PHONE_NUMBER_COUNTRY       = "US",
+ *     SUPPRESS_SELF_INVITE       = "true",
+ *     TWILIO_API_KEY             = "6babd5fa8226c66406edcce7390675b3"
+ *     TWILIO_APPLICATION_SID     = "be2d8e141ab5b45287d06ee649c48b82"
+ *     TWILIO_AUTH_TOKEN          = "17381f485e35f89608b88b45f5a00873"
+ *     TWILIO_MESSAGE_SERVICE_SID = "b2b551ca3228aa8d130b5739e1a20cdd"
+ *     TWILIO_STATUS_CALLBACK_URL = "https://callback.example.org"
+ *   }
+ * }
+ * ```
+ */
+
 terraform {
   required_providers {
     digitalocean = ">= 1.14"
@@ -6,59 +58,69 @@ terraform {
 
 variable "server_name" {
   description = "Server name used in nginx config"
+  type        = string
 }
 
 variable "base_url" {
   description = "Fully qualified https URL of the app"
+  type        = string
 }
 
 variable "resource_prefix" {
   description = "Prefix prepended to resource names"
   default     = "spoke-"
+  type        = string
 }
 
 variable "node_options" {
   description = "Value defined at build time and run time as NODE_OPTIONS"
   default     = "--max_old_space_size=8192"
+  type        = string
 }
 
 variable "node_env" {
   description = "Value defined at build time and run time as NODE_ENV"
   default     = "production"
+  type        = string
 }
 
 variable "port" {
   description = "TCP port used to communicate between droplet and nginx"
   default     = "3000"
+  type        = string
 }
 
 variable "droplet_size" {
   description = "Size value passed when provisioning app droplet"
   default     = "s-1vcpu-1gb"
+  type        = string
 }
 
 variable "region" {
   description = "Region in which all resources will be provisioned"
   default     = "nyc1"
+  type        = string
 }
 
 variable "ssh_keys" {
-  type        = list
+  type        = list(string)
   description = "List of ssh public keys to pass to droplet provisioning"
 }
 
 variable "cert_private_key" {
   description = "Certificate key to pass to nginx"
+  type        = string
 }
 
 variable "cert_certificate" {
   description = "Certificate with leaf and intermediates to pass to nginx"
+  type        = string
 }
 
 variable "env" {
-  type        = map
   description = "Arbitrary *additional* environment variables passed at build time and run time"
   default     = {}
+  type        = map(string)
 }
 
 resource "digitalocean_ssh_key" "app" {
@@ -220,17 +282,23 @@ ENV_TMPL
 }
 
 output "droplet_urn" {
-  value = digitalocean_droplet.app.urn
+  description = "urn of the droplet suitable for adding to project resources"
+  value       = digitalocean_droplet.app.urn
 }
 
 output "droplet_ipv4_address" {
-  value = digitalocean_droplet.app.ipv4_address
+  description = "ipv4 address of the droplet"
+  value       = digitalocean_droplet.app.ipv4_address
 }
 
 output "floating_ip_address" {
-  value = digitalocean_floating_ip.app.ip_address
+  description = "floating IP address assigned to the droplet suitable for creating a DNS A record"
+  value       = digitalocean_floating_ip.app.ip_address
 }
 
 output "floating_ip_urn" {
-  value = digitalocean_floating_ip.app.urn
+  description = "urn of the floating IP address assigned to the droplet suitable for adding to project resources"
+  value       = digitalocean_floating_ip.app.urn
 }
+
+// vim:filetype=terraform
