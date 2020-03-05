@@ -71,6 +71,7 @@ module "digitalocean_spoke" {
 | region | Region in which all resources will be provisioned | `string` | `"nyc1"` | no |
 | resource\_prefix | Prefix prepended to resource names | `string` | `"spoke-"` | no |
 | server\_name | Server name used in nginx config | `string` | n/a | yes |
+| spoke\_version | Git ref of MoveOnOrg/Spoke to deploy | `string` | `"v5.2"` | no |
 | ssh\_keys | List of ssh public keys to pass to droplet provisioning | `list(string)` | n/a | yes |
 
 ## Outputs

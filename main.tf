@@ -102,6 +102,12 @@ variable "region" {
   type        = string
 }
 
+variable "spoke_version" {
+  description = "Git ref of MoveOnOrg/Spoke to deploy"
+  default     = "v5.2"
+  type        = "string"
+}
+
 variable "ssh_keys" {
   type        = list(string)
   description = "List of ssh public keys to pass to droplet provisioning"
@@ -188,24 +194,25 @@ resource "random_string" "pg_password" {
 
 locals {
   env_map = merge({
-    ASSETS_MAP_FILE   = "assets.json",
-    ASSETS_DIR        = "./build/client/assets",
-    BASE_URL          = var.base_url,
-    DATABASE_URL      = "postgres://spoke:${random_string.pg_password.result}@127.0.0.1:5432/spoke",
-    DB_HOST           = "localhost",
-    DB_NAME           = "spoke",
-    DB_PASSWORD       = random_string.pg_password.result,
-    DB_PORT           = "5432",
-    DB_TYPE           = "pg",
-    DB_USER           = "spoke",
-    DB_USE_SSL        = "true",
-    JOBS_SAME_PROCESS = "1",
-    NODE_ENV          = var.node_env,
-    NODE_OPTIONS      = var.node_options,
-    OUTPUT_DIR        = "./build",
-    PORT              = var.port,
-    REDIS_URL         = "redis://127.0.0.1:6379/0",
-    SESSION_SECRET    = random_string.session_secret.result,
+    ASSETS_MAP_FILE         = "assets.json",
+    ASSETS_DIR              = "./build/client/assets",
+    BASE_URL                = var.base_url,
+    DATABASE_URL            = "postgres://spoke:${random_string.pg_password.result}@127.0.0.1:5432/spoke",
+    DB_HOST                 = "localhost",
+    DB_NAME                 = "spoke",
+    DB_PASSWORD             = random_string.pg_password.result,
+    DB_PORT                 = "5432",
+    DB_TYPE                 = "pg",
+    DB_USER                 = "spoke",
+    DB_USE_SSL              = "true",
+    JOBS_SAME_PROCESS       = "1",
+    NODE_ENV                = var.node_env,
+    NODE_OPTIONS            = var.node_options,
+    OUTPUT_DIR              = "./build",
+    PORT                    = var.port,
+    REDIS_URL               = "redis://127.0.0.1:6379/0",
+    SESSION_SECRET          = random_string.session_secret.result,
+    TERRAFORM_SPOKE_VERSION = var.spoke_version,
   }, var.env)
 }
 

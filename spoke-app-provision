@@ -96,12 +96,17 @@ _run_system1() {
 _run_spoke0() {
   set -o xtrace
 
+  set -o allexport
+  source /tmp/app.env
+  set +o allexport
+
   git --version
   if [[ ! -d /home/spoke/app/.git ]]; then
     git clone https://github.com/MoveOnOrg/Spoke.git /home/spoke/app
   fi
+
   cd /home/spoke/app
-  git checkout -qf 'v5.1'
+  git checkout -qf "${TERRAFORM_SPOKE_VERSION}"
 
   cp -v /tmp/spoke-app-run /home/spoke/spoke-app-run
   chmod +x /home/spoke/spoke-app-run
@@ -121,10 +126,6 @@ _run_spoke0() {
 
   cp -v /tmp/app.env /home/spoke/app/.env
   sha1sum /home/spoke/app/.env
-
-  set -o allexport
-  source /home/spoke/app/.env
-  set +o allexport
 
   yarn --version
   yarn install --ignore-scripts --non-interactive --frozen-lockfile
