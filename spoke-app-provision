@@ -108,6 +108,7 @@ _run_spoke0() {
   fi
 
   cd /home/spoke/app
+  git fetch
   git checkout -qf "${TERRAFORM_SPOKE_VERSION}"
 
   cp -v /tmp/spoke-app-run /home/spoke/spoke-app-run
