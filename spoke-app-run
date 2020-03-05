@@ -4,6 +4,7 @@ set -o pipefail
 
 main() {
   cd /home/spoke/app
+  # shellcheck source=/dev/null
   source ~/.nvm/nvm.sh
   nvm use
   exec npm start

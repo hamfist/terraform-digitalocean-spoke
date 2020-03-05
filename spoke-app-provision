@@ -51,6 +51,7 @@ _run_system0() {
   pg_ctlcluster 11 main start
   sudo -H -u postgres bash <<PGSETUP
     set -o allexport
+    # shellcheck source=/dev/null
     source /tmp/app.env
     createuser spoke || true
     createdb --owner=spoke spoke || true
@@ -97,6 +98,7 @@ _run_spoke0() {
   set -o xtrace
 
   set -o allexport
+  # shellcheck source=/dev/null
   source /tmp/app.env
   set +o allexport
 
@@ -116,6 +118,7 @@ _run_spoke0() {
       https://raw.githubusercontent.com/nvm-sh/nvm/v0.35.2/install.sh | bash
     set +o errexit
     set +o xtrace
+    # shellcheck source=/dev/null
     source ~/.nvm/nvm.sh
     set -o xtrace
     set -o errexit
