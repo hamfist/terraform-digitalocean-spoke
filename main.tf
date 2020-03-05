@@ -105,7 +105,7 @@ variable "region" {
 variable "spoke_version" {
   description = "Git ref of MoveOnOrg/Spoke to deploy"
   default     = "v5.2"
-  type        = "string"
+  type        = string
 }
 
 variable "ssh_keys" {
