@@ -27,7 +27,7 @@ module "digitalocean_spoke" {
   cert_certificate = file("path/to/cert.crt")
   env = {
     AUTH0_CLIENT_ID            = "8570285697946a0cc03f8049b9309d7e"
-    AUTH0_CLIENT_SECRET        = "1194435d32479ef99ed51a0a5f244cd5"
+    AUTH0_CLIENT_SECRET        = "1194435d32479ab99ed51a0a5f244cd5"
     AUTH0_DOMAIN               = "example.auth0.com"
     EMAIL_FROM                 = "admin@example.org"
     EMAIL_HOST                 = "mail.example.org"
