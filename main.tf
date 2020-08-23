@@ -52,7 +52,16 @@
 
 terraform {
   required_providers {
-    digitalocean = ">= 1.22"
+    digitalocean = {
+      source  = "terraform-providers/digitalocean"
+      version = ">= 1.22"
+    }
+    null = {
+      source = "hashicorp/null"
+    }
+    random = {
+      source = "hashicorp/random"
+    }
   }
 }
 

@@ -52,6 +52,7 @@ module "digitalocean_spoke" {
 
 | Name | Version |
 |------|---------|
+| terraform | >= 0.13 |
 | digitalocean | >= 1.22 |
 
 ## Providers
