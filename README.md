@@ -6,7 +6,7 @@ This is a terraform module that provisions a
 
 ## Terraform versions
 
-This module is compatible with Terraform version `0.12+`.
+This module is compatible with Terraform version `0.13+`.
 
 ## Usage
 
@@ -48,21 +48,28 @@ module "digitalocean_spoke" {
 }
 ```
 
+## Requirements
+
+| Name | Version |
+|------|---------|
+| digitalocean | >= 1.22 |
+
 ## Providers
 
 | Name | Version |
 |------|---------|
-| digitalocean | >= 1.14 |
+| digitalocean | >= 1.22 |
 | null | n/a |
 | random | n/a |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:-----:|
+|------|-------------|------|---------|:--------:|
 | base\_url | Fully qualified https URL of the app | `string` | n/a | yes |
 | cert\_certificate | Certificate with leaf and intermediates to pass to nginx | `string` | n/a | yes |
 | cert\_private\_key | Certificate key to pass to nginx | `string` | n/a | yes |
+| droplet\_image | Image to use when provisioning app droplet | `string` | `"ubuntu-20-04-x64"` | no |
 | droplet\_size | Size value passed when provisioning app droplet | `string` | `"s-1vcpu-1gb"` | no |
 | env | Arbitrary *additional* environment variables passed at build time and run time | `map(string)` | `{}` | no |
 | node\_env | Value defined at build time and run time as NODE\_ENV | `string` | `"production"` | no |
@@ -71,7 +78,7 @@ module "digitalocean_spoke" {
 | region | Region in which all resources will be provisioned | `string` | `"nyc1"` | no |
 | resource\_prefix | Prefix prepended to resource names | `string` | `"spoke-"` | no |
 | server\_name | Server name used in nginx config | `string` | n/a | yes |
-| spoke\_version | Git ref of MoveOnOrg/Spoke to deploy | `string` | `"v5.2"` | no |
+| spoke\_version | Git ref of MoveOnOrg/Spoke to deploy | `string` | `"v8.0"` | no |
 | ssh\_keys | List of ssh public keys to pass to droplet provisioning | `list(string)` | n/a | yes |
 
 ## Outputs
