@@ -7,7 +7,7 @@
  *
  * ## Terraform versions
  *
- * This module is compatible with Terraform version `0.12+`.
+ * This module is compatible with Terraform version `0.13+`.
  *
  * ## Usage
  *
@@ -28,7 +28,7 @@
  *   cert_certificate = file("path/to/cert.crt")
  *   env = {
  *     AUTH0_CLIENT_ID            = "8570285697946a0cc03f8049b9309d7e"
- *     AUTH0_CLIENT_SECRET        = "1194435d32479ef99ed51a0a5f244cd5"
+ *     AUTH0_CLIENT_SECRET        = "1194435d32479ab99ed51a0a5f244cd5"
  *     AUTH0_DOMAIN               = "example.auth0.com"
  *     EMAIL_FROM                 = "admin@example.org"
  *     EMAIL_HOST                 = "mail.example.org"
@@ -52,91 +52,106 @@
 
 terraform {
   required_providers {
-    digitalocean = ">= 1.14"
+    digitalocean = {
+      source  = "digitalocean/digitalocean"
+      version = ">= 1.22"
+    }
+    null = {
+      source = "hashicorp/null"
+    }
+    random = {
+      source = "hashicorp/random"
+    }
   }
 }
 
-variable "server_name" {
+variable server_name {
   description = "Server name used in nginx config"
   type        = string
 }
 
-variable "base_url" {
+variable base_url {
   description = "Fully qualified https URL of the app"
   type        = string
 }
 
-variable "resource_prefix" {
+variable resource_prefix {
   description = "Prefix prepended to resource names"
   default     = "spoke-"
   type        = string
 }
 
-variable "node_options" {
+variable node_options {
   description = "Value defined at build time and run time as NODE_OPTIONS"
   default     = "--max_old_space_size=8192"
   type        = string
 }
 
-variable "node_env" {
+variable node_env {
   description = "Value defined at build time and run time as NODE_ENV"
   default     = "production"
   type        = string
 }
 
-variable "port" {
+variable port {
   description = "TCP port used to communicate between droplet and nginx"
   default     = "3000"
   type        = string
 }
 
-variable "droplet_size" {
+variable droplet_image {
+  description = "Image to use when provisioning app droplet"
+  default     = "ubuntu-20-04-x64"
+  type        = string
+}
+
+variable droplet_size {
   description = "Size value passed when provisioning app droplet"
   default     = "s-1vcpu-1gb"
   type        = string
 }
 
-variable "region" {
+variable region {
   description = "Region in which all resources will be provisioned"
   default     = "nyc1"
   type        = string
 }
 
-variable "spoke_version" {
+variable spoke_version {
   description = "Git ref of MoveOnOrg/Spoke to deploy"
-  default     = "v5.2"
+  default     = "v8.0"
   type        = string
 }
 
-variable "ssh_keys" {
+variable ssh_keys {
   type        = list(string)
   description = "List of ssh public keys to pass to droplet provisioning"
 }
 
-variable "cert_private_key" {
+variable cert_private_key {
   description = "Certificate key to pass to nginx"
   type        = string
 }
 
-variable "cert_certificate" {
+variable cert_certificate {
   description = "Certificate with leaf and intermediates to pass to nginx"
   type        = string
 }
 
-variable "env" {
+variable env {
   description = "Arbitrary *additional* environment variables passed at build time and run time"
   default     = {}
   type        = map(string)
 }
 
-resource "digitalocean_ssh_key" "app" {
+resource digitalocean_ssh_key app {
   count      = length(var.ssh_keys)
   name       = "${var.resource_prefix}app-${count.index}"
   public_key = element(var.ssh_keys, count.index)
 }
 
-resource "digitalocean_droplet" "app" {
-  image  = "ubuntu-18-04-x64"
+resource digitalocean_droplet app {
+  image  = var.droplet_image
   name   = "${var.resource_prefix}app"
   region = var.region
   size   = var.droplet_size
@@ -144,17 +159,17 @@ resource "digitalocean_droplet" "app" {
   ssh_keys = digitalocean_ssh_key.app[*].id
 }
 
-resource "digitalocean_floating_ip" "app" {
+resource digitalocean_floating_ip app {
   droplet_id = digitalocean_droplet.app.id
   region     = digitalocean_droplet.app.region
 }
 
-resource "digitalocean_firewall" "app" {
+resource digitalocean_firewall app {
   name = "pghdsa-spoke-app"
 
   droplet_ids = [digitalocean_droplet.app.id]
 
-  dynamic "inbound_rule" {
+  dynamic inbound_rule {
     for_each = ["22", "80", "443"]
     content {
       protocol         = "tcp"
@@ -168,7 +183,7 @@ resource "digitalocean_firewall" "app" {
     source_addresses = ["0.0.0.0/0", "::/0"]
   }
 
-  dynamic "outbound_rule" {
+  dynamic outbound_rule {
     for_each = ["tcp", "udp"]
     content {
       protocol              = outbound_rule.value
@@ -183,12 +198,12 @@ resource "digitalocean_firewall" "app" {
   }
 }
 
-resource "random_string" "session_secret" {
+resource random_string session_secret {
   length  = 199
   special = false
 }
 
-resource "random_string" "pg_password" {
+resource random_string pg_password {
   length = 31
 }
 
@@ -216,7 +231,7 @@ locals {
   }, var.env)
 }
 
-resource "null_resource" "app_provision" {
+resource null_resource app_provision {
   triggers = {
     droplet_id            = digitalocean_droplet.app.id
     provision_script_sha1 = filesha1("${path.module}/spoke-app-provision")
@@ -236,17 +251,17 @@ resource "null_resource" "app_provision" {
     host = digitalocean_droplet.app.ipv4_address
   }
 
-  provisioner "file" {
+  provisioner file {
     source      = "${path.module}/spoke-app-provision"
     destination = "/tmp/spoke-app-provision"
   }
 
-  provisioner "file" {
+  provisioner file {
     source      = "${path.module}/spoke-app-run"
     destination = "/tmp/spoke-app-run"
   }
 
-  provisioner "file" {
+  provisioner file {
     content = templatefile("${path.module}/nginx-sites-default.conf.tpl", {
       server_name = var.server_name,
       port        = var.port,
@@ -254,32 +269,32 @@ resource "null_resource" "app_provision" {
     destination = "/tmp/nginx-sites-default.conf"
   }
 
-  provisioner "file" {
+  provisioner file {
     content     = var.cert_certificate
     destination = "/tmp/spoke.crt"
   }
 
-  provisioner "file" {
+  provisioner file {
     content     = var.cert_private_key
     destination = "/tmp/spoke.key"
   }
 
-  provisioner "file" {
-    content = <<-ENV_TMPL
+  provisioner file {
+    content = <<-ENVTMPL
 %{for key, value in local.env_map~}
 ${key}='${value}'
 %{endfor~}
-ENV_TMPL
+ENVTMPL
 
     destination = "/tmp/app.env"
   }
 
-  provisioner "file" {
+  provisioner file {
     source      = "${path.module}/spoke.service"
     destination = "/tmp/spoke.service"
   }
 
-  provisioner "remote-exec" {
+  provisioner remote-exec {
     inline = [
       "bash /tmp/spoke-app-provision system0",
       "sudo -H -u spoke bash /tmp/spoke-app-provision spoke0",
@@ -288,22 +303,22 @@ ENV_TMPL
   }
 }
 
-output "droplet_urn" {
+output droplet_urn {
   description = "urn of the droplet suitable for adding to project resources"
   value       = digitalocean_droplet.app.urn
 }
 
-output "droplet_ipv4_address" {
+output droplet_ipv4_address {
   description = "ipv4 address of the droplet"
   value       = digitalocean_droplet.app.ipv4_address
 }
 
-output "floating_ip_address" {
+output floating_ip_address {
   description = "floating IP address assigned to the droplet suitable for creating a DNS A record"
   value       = digitalocean_floating_ip.app.ip_address
 }
 
-output "floating_ip_urn" {
+output floating_ip_urn {
   description = "urn of the floating IP address assigned to the droplet suitable for adding to project resources"
   value       = digitalocean_floating_ip.app.urn
 }

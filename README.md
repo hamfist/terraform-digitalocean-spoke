@@ -6,7 +6,7 @@ This is a terraform module that provisions a
 
 ## Terraform versions
 
-This module is compatible with Terraform version `0.12+`.
+This module is compatible with Terraform version `0.13+`.
 
 ## Usage
 
@@ -27,7 +27,7 @@ module "digitalocean_spoke" {
   cert_certificate = file("path/to/cert.crt")
   env = {
     AUTH0_CLIENT_ID            = "8570285697946a0cc03f8049b9309d7e"
-    AUTH0_CLIENT_SECRET        = "1194435d32479ef99ed51a0a5f244cd5"
+    AUTH0_CLIENT_SECRET        = "1194435d32479ab99ed51a0a5f244cd5"
     AUTH0_DOMAIN               = "example.auth0.com"
     EMAIL_FROM                 = "admin@example.org"
     EMAIL_HOST                 = "mail.example.org"
@@ -48,21 +48,29 @@ module "digitalocean_spoke" {
 }
 ```
 
+## Requirements
+
+| Name | Version |
+|------|---------|
+| terraform | >= 0.13 |
+| digitalocean | >= 1.22 |
+
 ## Providers
 
 | Name | Version |
 |------|---------|
-| digitalocean | >= 1.14 |
+| digitalocean | >= 1.22 |
 | null | n/a |
 | random | n/a |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
-|------|-------------|------|---------|:-----:|
+|------|-------------|------|---------|:--------:|
 | base\_url | Fully qualified https URL of the app | `string` | n/a | yes |
 | cert\_certificate | Certificate with leaf and intermediates to pass to nginx | `string` | n/a | yes |
 | cert\_private\_key | Certificate key to pass to nginx | `string` | n/a | yes |
+| droplet\_image | Image to use when provisioning app droplet | `string` | `"ubuntu-20-04-x64"` | no |
 | droplet\_size | Size value passed when provisioning app droplet | `string` | `"s-1vcpu-1gb"` | no |
 | env | Arbitrary *additional* environment variables passed at build time and run time | `map(string)` | `{}` | no |
 | node\_env | Value defined at build time and run time as NODE\_ENV | `string` | `"production"` | no |
@@ -71,7 +79,7 @@ module "digitalocean_spoke" {
 | region | Region in which all resources will be provisioned | `string` | `"nyc1"` | no |
 | resource\_prefix | Prefix prepended to resource names | `string` | `"spoke-"` | no |
 | server\_name | Server name used in nginx config | `string` | n/a | yes |
-| spoke\_version | Git ref of MoveOnOrg/Spoke to deploy | `string` | `"v5.2"` | no |
+| spoke\_version | Git ref of MoveOnOrg/Spoke to deploy | `string` | `"v8.0"` | no |
 | ssh\_keys | List of ssh public keys to pass to droplet provisioning | `list(string)` | n/a | yes |
 
 ## Outputs
