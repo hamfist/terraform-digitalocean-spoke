@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+
+main() {
+  bash /tmp/spoke-app-provision system0
+  sudo -H -u spoke bash /tmp/spoke-app-provision spoke0
+  bash /tmp/spoke-app-provision system1
+}
+
+main "${@}"

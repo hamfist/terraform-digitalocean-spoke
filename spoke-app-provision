@@ -40,15 +40,15 @@ _run_system0() {
     redis
 
   dpkg --get-selections || true |
-    if ! grep -qE '^postgresql-client-11.+install$'; then
+    if ! grep -qE '^postgresql-client-13.+install$'; then
       echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" |
         sudo tee /etc/apt/sources.list.d/pgdg.list &>/dev/null
       curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
       sudo apt-get update -y
-      sudo apt-get install -y postgresql-11 postgresql-client-11
+      sudo apt-get install -y postgresql-13 postgresql-client-13
     fi
 
-  pg_ctlcluster 11 main start
+  pg_ctlcluster 13 main start
   sudo -H -u postgres bash <<PGSETUP
     set -o allexport
     # shellcheck source=/dev/null
@@ -80,6 +80,9 @@ PGSETUP
   chmod 0600 /home/spoke/spoke.crt /home/spoke/spoke.key
   chown spoke /home/spoke/spoke.crt /home/spoke/spoke.key
   cp -v /tmp/nginx-sites-default.conf /etc/nginx/sites-available/default
+  if [[ -s /tmp/nginx-sites-default-override.conf ]]; then
+    cp -v /tmp/nginx-sites-default-override.conf /etc/nginx/sites-available/default
+  fi
   ln -svf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
   sha1sum /etc/nginx/sites-available/default
   systemctl restart nginx

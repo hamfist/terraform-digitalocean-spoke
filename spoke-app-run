@@ -7,6 +7,9 @@ main() {
   # shellcheck source=/dev/null
   source ~/.nvm/nvm.sh
   nvm use
+  if [[ -f ./build/server/server/index.js ]]; then
+    exec node ./build/server/server
+  fi
   exec npm start
 }
 
