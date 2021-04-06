@@ -52,42 +52,58 @@ module "digitalocean_spoke" {
 
 | Name | Version |
 |------|---------|
-| terraform | >= 0.13 |
-| digitalocean | >= 1.22 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 0.13 |
+| <a name="requirement_digitalocean"></a> [digitalocean](#requirement\_digitalocean) | >= 1.22 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| digitalocean | >= 1.22 |
-| null | n/a |
-| random | n/a |
+| <a name="provider_digitalocean"></a> [digitalocean](#provider\_digitalocean) | >= 1.22 |
+| <a name="provider_null"></a> [null](#provider\_null) | n/a |
+| <a name="provider_random"></a> [random](#provider\_random) | n/a |
+
+## Modules
+
+No modules.
+
+## Resources
+
+| Name | Type |
+|------|------|
+| [digitalocean_droplet.app](https://registry.terraform.io/providers/digitalocean/digitalocean/latest/docs/resources/droplet) | resource |
+| [digitalocean_firewall.app](https://registry.terraform.io/providers/digitalocean/digitalocean/latest/docs/resources/firewall) | resource |
+| [digitalocean_floating_ip.app](https://registry.terraform.io/providers/digitalocean/digitalocean/latest/docs/resources/floating_ip) | resource |
+| [digitalocean_ssh_key.app](https://registry.terraform.io/providers/digitalocean/digitalocean/latest/docs/resources/ssh_key) | resource |
+| [null_resource.app_provision](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
+| [random_string.pg_password](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string) | resource |
+| [random_string.session_secret](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/string) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| base\_url | Fully qualified https URL of the app | `string` | n/a | yes |
-| cert\_certificate | Certificate with leaf and intermediates to pass to nginx | `string` | n/a | yes |
-| cert\_private\_key | Certificate key to pass to nginx | `string` | n/a | yes |
-| droplet\_image | Image to use when provisioning app droplet | `string` | `"ubuntu-20-04-x64"` | no |
-| droplet\_size | Size value passed when provisioning app droplet | `string` | `"s-1vcpu-1gb"` | no |
-| env | Arbitrary *additional* environment variables passed at build time and run time | `map(string)` | `{}` | no |
-| node\_env | Value defined at build time and run time as NODE\_ENV | `string` | `"production"` | no |
-| node\_options | Value defined at build time and run time as NODE\_OPTIONS | `string` | `"--max_old_space_size=8192"` | no |
-| port | TCP port used to communicate between droplet and nginx | `string` | `"3000"` | no |
-| region | Region in which all resources will be provisioned | `string` | `"nyc1"` | no |
-| resource\_prefix | Prefix prepended to resource names | `string` | `"spoke-"` | no |
-| server\_name | Server name used in nginx config | `string` | n/a | yes |
-| spoke\_version | Git ref of MoveOnOrg/Spoke to deploy | `string` | `"v8.0"` | no |
-| ssh\_keys | List of ssh public keys to pass to droplet provisioning | `list(string)` | n/a | yes |
+| <a name="input_base_url"></a> [base\_url](#input\_base\_url) | Fully qualified https URL of the app | `string` | n/a | yes |
+| <a name="input_cert_certificate"></a> [cert\_certificate](#input\_cert\_certificate) | Certificate with leaf and intermediates to pass to nginx | `string` | n/a | yes |
+| <a name="input_cert_private_key"></a> [cert\_private\_key](#input\_cert\_private\_key) | Certificate key to pass to nginx | `string` | n/a | yes |
+| <a name="input_droplet_image"></a> [droplet\_image](#input\_droplet\_image) | Image to use when provisioning app droplet | `string` | `"ubuntu-20-04-x64"` | no |
+| <a name="input_droplet_size"></a> [droplet\_size](#input\_droplet\_size) | Size value passed when provisioning app droplet | `string` | `"s-1vcpu-1gb"` | no |
+| <a name="input_env"></a> [env](#input\_env) | Arbitrary *additional* environment variables passed at build time and run time | `map(string)` | `{}` | no |
+| <a name="input_nginx_site_override_conf"></a> [nginx\_site\_override\_conf](#input\_nginx\_site\_override\_conf) | Complete nginx site configuration override | `string` | `""` | no |
+| <a name="input_node_env"></a> [node\_env](#input\_node\_env) | Value defined at build time and run time as NODE\_ENV | `string` | `"production"` | no |
+| <a name="input_node_options"></a> [node\_options](#input\_node\_options) | Value defined at build time and run time as NODE\_OPTIONS | `string` | `"--max_old_space_size=8192"` | no |
+| <a name="input_port"></a> [port](#input\_port) | TCP port used to communicate between droplet and nginx | `string` | `"3000"` | no |
+| <a name="input_region"></a> [region](#input\_region) | Region in which all resources will be provisioned | `string` | `"nyc1"` | no |
+| <a name="input_resource_prefix"></a> [resource\_prefix](#input\_resource\_prefix) | Prefix prepended to resource names | `string` | `"spoke-"` | no |
+| <a name="input_server_name"></a> [server\_name](#input\_server\_name) | Server name used in nginx config | `string` | n/a | yes |
+| <a name="input_spoke_version"></a> [spoke\_version](#input\_spoke\_version) | Git ref of MoveOnOrg/Spoke to deploy | `string` | `"v8.0"` | no |
+| <a name="input_ssh_keys"></a> [ssh\_keys](#input\_ssh\_keys) | List of ssh public keys to pass to droplet provisioning | `list(string)` | n/a | yes |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| droplet\_ipv4\_address | ipv4 address of the droplet |
-| droplet\_urn | urn of the droplet suitable for adding to project resources |
-| floating\_ip\_address | floating IP address assigned to the droplet suitable for creating a DNS A record |
-| floating\_ip\_urn | urn of the floating IP address assigned to the droplet suitable for adding to project resources |
-
+| <a name="output_droplet_ipv4_address"></a> [droplet\_ipv4\_address](#output\_droplet\_ipv4\_address) | ipv4 address of the droplet |
+| <a name="output_droplet_urn"></a> [droplet\_urn](#output\_droplet\_urn) | urn of the droplet suitable for adding to project resources |
+| <a name="output_floating_ip_address"></a> [floating\_ip\_address](#output\_floating\_ip\_address) | floating IP address assigned to the droplet suitable for creating a DNS A record |
+| <a name="output_floating_ip_urn"></a> [floating\_ip\_urn](#output\_floating\_ip\_urn) | urn of the floating IP address assigned to the droplet suitable for adding to project resources |
