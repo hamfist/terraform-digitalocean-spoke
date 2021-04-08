@@ -1,4 +1,4 @@
-# `tf_digitalocean_spoke`
+# `terraform-digitalocean-spoke`
 <!-- WARNING: this file is generated -->
 
 This is a terraform module that provisions a
@@ -16,7 +16,7 @@ like this:
 
 ```hcl
 module "digitalocean_spoke" {
-  source = "github.com/meatballhat/tf_digitalocean_spoke"
+  source = "github.com/hamfist/terraform-digitalocean-spoke"
 
   server_name      = "spoke.example.org"
   base_url         = "https://spoke.example.org"
