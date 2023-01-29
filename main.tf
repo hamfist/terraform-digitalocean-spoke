@@ -124,7 +124,7 @@ variable "region" {
 
 variable "spoke_version" {
   description = "Git ref of MoveOnOrg/Spoke to deploy"
-  default     = "v8.0"
+  default     = "12.3.0"
   type        = string
 }
 
