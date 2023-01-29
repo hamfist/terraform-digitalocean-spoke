@@ -16,7 +16,7 @@ like this:
 
 ```hcl
 module "digitalocean_spoke" {
-  source = "github.com/hamfist/terraform-digitalocean-spoke"
+  source = "hamfist/spoke/digitalocean"
 
   server_name      = "spoke.example.org"
   base_url         = "https://spoke.example.org"
